@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Trophy, Play, RotateCcw } from 'lucide-react';
+import { Trophy, Play, RotateCcw, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Pause } from 'lucide-react';
 
 const GRID_SIZE = 20;
 const INITIAL_SPEED = 150;
@@ -27,6 +27,38 @@ export function SnakeGame() {
   
   const directionRef = useRef(direction);
   const gameAreaRef = useRef<HTMLDivElement>(null);
+  const touchStartRef = useRef<{x: number, y: number} | null>(null);
+
+  const changeDirection = useCallback((newDir: Direction) => {
+    if (isPaused || isGameOver) return;
+    if (newDir === 'UP' && directionRef.current !== 'DOWN') setDirection('UP');
+    if (newDir === 'DOWN' && directionRef.current !== 'UP') setDirection('DOWN');
+    if (newDir === 'LEFT' && directionRef.current !== 'RIGHT') setDirection('LEFT');
+    if (newDir === 'RIGHT' && directionRef.current !== 'LEFT') setDirection('RIGHT');
+  }, [isPaused, isGameOver]);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartRef.current = {
+      x: e.touches[0].clientX,
+      y: e.touches[0].clientY
+    };
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (!touchStartRef.current) return;
+    const touchEndX = e.changedTouches[0].clientX;
+    const touchEndY = e.changedTouches[0].clientY;
+    
+    const dx = touchEndX - touchStartRef.current.x;
+    const dy = touchEndY - touchStartRef.current.y;
+    
+    if (Math.abs(dx) > Math.abs(dy)) {
+      if (Math.abs(dx) > 30) changeDirection(dx > 0 ? 'RIGHT' : 'LEFT');
+    } else {
+      if (Math.abs(dy) > 30) changeDirection(dy > 0 ? 'DOWN' : 'UP');
+    }
+    touchStartRef.current = null;
+  };
 
   const generateFood = useCallback((currentSnake: Point[]) => {
     let newFood: Point;
@@ -181,7 +213,7 @@ export function SnakeGame() {
       {/* Game Grid */}
       <div 
         ref={gameAreaRef}
-        className="relative bg-gray-950 border-2 border-cyan-500/50 rounded-xl overflow-hidden shadow-[0_0_30px_rgba(34,211,238,0.2)] focus:outline-none"
+        className="relative bg-gray-950 border-2 border-cyan-500/50 rounded-xl overflow-hidden shadow-[0_0_30px_rgba(34,211,238,0.2)] focus:outline-none touch-none"
         style={{
           width: 'min(100vw - 2rem, 500px)',
           height: 'min(100vw - 2rem, 500px)',
@@ -189,6 +221,8 @@ export function SnakeGame() {
           backgroundSize: `${100 / GRID_SIZE}% ${100 / GRID_SIZE}%`
         }}
         tabIndex={0}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
       >
         {/* Food */}
         <div
@@ -279,6 +313,21 @@ export function SnakeGame() {
             )}
           </div>
         )}
+      </div>
+
+      {/* Mobile Controls */}
+      <div className="grid grid-cols-3 gap-2 mt-2 sm:hidden w-64 mx-auto">
+        <div />
+        <button onClick={() => changeDirection('UP')} className="p-4 bg-gray-900/80 border border-cyan-500/50 rounded-xl text-cyan-400 flex items-center justify-center active:bg-cyan-500/30 active:scale-95 transition-all shadow-[0_0_10px_rgba(34,211,238,0.2)]"><ArrowUp size={28} /></button>
+        <div />
+        <button onClick={() => changeDirection('LEFT')} className="p-4 bg-gray-900/80 border border-cyan-500/50 rounded-xl text-cyan-400 flex items-center justify-center active:bg-cyan-500/30 active:scale-95 transition-all shadow-[0_0_10px_rgba(34,211,238,0.2)]"><ArrowLeft size={28} /></button>
+        <button onClick={() => setIsPaused(p => !p)} className="p-4 bg-gray-900/80 border border-fuchsia-500/50 rounded-xl text-fuchsia-400 flex items-center justify-center active:bg-fuchsia-500/30 active:scale-95 transition-all shadow-[0_0_10px_rgba(217,70,239,0.2)]">
+          {isPaused ? <Play size={28} className="ml-1" /> : <Pause size={28} />}
+        </button>
+        <button onClick={() => changeDirection('RIGHT')} className="p-4 bg-gray-900/80 border border-cyan-500/50 rounded-xl text-cyan-400 flex items-center justify-center active:bg-cyan-500/30 active:scale-95 transition-all shadow-[0_0_10px_rgba(34,211,238,0.2)]"><ArrowRight size={28} /></button>
+        <div />
+        <button onClick={() => changeDirection('DOWN')} className="p-4 bg-gray-900/80 border border-cyan-500/50 rounded-xl text-cyan-400 flex items-center justify-center active:bg-cyan-500/30 active:scale-95 transition-all shadow-[0_0_10px_rgba(34,211,238,0.2)]"><ArrowDown size={28} /></button>
+        <div />
       </div>
     </div>
   );
